@@ -1,0 +1,113 @@
+<?php
+/**
+ * @file
+ * Module for SMS Outbound API integration.
+ *
+ * @package sms
+ * @subpackage sms_outbound
+ */
+
+// To test
+function sms_outbound_page_alter(&$page) {
+
+  //message_option('sms_outbound_reminder_message', 1);
+
+}
+
+/**
+ * Implements hook_cron().
+ *
+ * For reminder messages.
+ */
+function sms_outbound_cron() {
+
+  // HERE cron watching who needs to send a reminder, and call message_option().
+  // message_option('sms_outbound_reminder_message', 1);
+
+}
+
+/**
+ * Implements hook_user_insert().
+ *
+ * For registration messages.
+ */
+function sms_outbound_user_insert(&$edit, $account, $category) {
+
+  // HERE sends a registration success message.
+  // message_option('sms_outbound_registration_message', 1);
+
+}
+
+/**
+ * Implements hook_user_update().
+ *
+ * For password update messages.
+ */
+function hook_user_update(&$edit, $account, $category) {
+
+  // HERE sends a password update success message.
+  // message_option('sms_outbound_password_message', 1);
+
+}
+
+function message_option($message_type, $uid) {
+
+  if ($message_type == 'sms_outbound_reminder_message') {
+
+    // Check if user sets custom message.
+    // Build message.
+
+  }
+
+  $message = variable_get($message_type, 0);
+
+  send_sms($message);
+}
+
+function send_sms($message) {
+
+  $url = 'http://sms.informaxion.nl/gateway/sendsms.php';
+
+  $data_sms = array (
+    'UID' => variable_get('sms_outbound_username', 0),
+    'PWD' => variable_get('sms_outbound_password', 0),
+    'M' => $message,
+    'N' => '+380965588382',
+    'MSGID' => 'client_UID'
+  );
+
+  $data = '';
+  foreach ($data_sms as $key=>$value) {
+    $data .= $key . '=' . $value . '&';
+  }
+
+  $options = array(
+    'headers' => array('Content-Type' => 'application/x-www-form-urlencoded'),
+    'method' => 'POST',
+    'data' => $data,
+    'timeout' => 15
+  );
+
+  $response = drupal_http_request($url, $options);
+
+  $log = 'SMS Outbound API Response number: ' . $response->data . '. Content: ' . $message;
+  watchdog('sms', $log, $variables = array(), $severity = WATCHDOG_NOTICE, $link = NULL);
+}
+
+/**
+ * Implements hook_menu().
+ */
+function sms_outbound_menu() {
+  $items = array();
+  $items['admin/config/services/sms_outbound'] = array(
+    'title' => 'Sms Outbound',
+    'description' => 'Description of your Sms settings page',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('sms_outbound_add_more'),
+    'access arguments' => array('administer site configuration'),
+    'type' => MENU_NORMAL_ITEM,
+    'file' => 'sms_outbound.admin.inc',
+  );
+
+  return $items;
+}

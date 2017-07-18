@@ -1,0 +1,12 @@
+name = "Sms Outbound"
+description = "Sms Outbound - sms site services."
+dependencies[] = sms
+package = Other
+core = 7.x
+
+configure = admin/config/services/sms_outbound
+
+; Information added by Drupal.org packaging script on 2017-07-18
+version = "7.x-1.0"
+core = "7.x"
+project = "sms_outbound"
