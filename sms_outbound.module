@@ -10,7 +10,7 @@
 // To test
 function sms_outbound_page_alter(&$page) {
 
-  //message_option('sms_outbound_reminder_message', 1);
+  message_option('sms_outbound_reminder_message');
 
 }
 
@@ -22,7 +22,8 @@ function sms_outbound_page_alter(&$page) {
 function sms_outbound_cron() {
 
   // HERE cron watching who needs to send a reminder, and call message_option().
-  // message_option('sms_outbound_reminder_message', 1);
+  $uid = 1;
+  message_option('sms_outbound_reminder_message', $uid);
 
 }
 
@@ -34,7 +35,7 @@ function sms_outbound_cron() {
 function sms_outbound_user_insert(&$edit, $account, $category) {
 
   // HERE sends a registration success message.
-  // message_option('sms_outbound_registration_message', 1);
+  // message_option('sms_outbound_registration_message');
 
 }
 
@@ -46,32 +47,42 @@ function sms_outbound_user_insert(&$edit, $account, $category) {
 function hook_user_update(&$edit, $account, $category) {
 
   // HERE sends a password update success message.
-  // message_option('sms_outbound_password_message', 1);
+  // message_option('sms_outbound_password_message');
 
 }
 
-function message_option($message_type, $uid) {
+function message_option($message_type, $uid = null) {
 
   if ($message_type == 'sms_outbound_reminder_message') {
 
     // Check if user sets custom message.
     // Build message.
+    $message = variable_get($message_type, 0);
 
   }
+  else {
+    $message = variable_get($message_type, 0);
+  }
 
-  $message = variable_get($message_type, 0);
-
-  send_sms($message);
+  send_sms($message, $uid);
 }
 
-function send_sms($message) {
+function send_sms($message, $uid) {
+
+  if (!$uid) {
+    global $user;
+    $uid = $user->uid;
+  }
+  else {
+    $user = user_load($uid);
+  }
 
   $url = 'http://sms.informaxion.nl/gateway/sendsms.php';
 
   $data_sms = array (
     'UID' => variable_get('sms_outbound_username', 0),
     'PWD' => variable_get('sms_outbound_password', 0),
-    'M' => $message,
+    'M' => token_replace($message, array('user' => $user)),
     'N' => '+380965588382',
     'MSGID' => 'client_UID'
   );
@@ -90,8 +101,11 @@ function send_sms($message) {
 
   $response = drupal_http_request($url, $options);
 
-  $log = 'SMS Outbound API Response number: ' . $response->data . '. Content: ' . $message;
+  $log = 'SMS Outbound API Response number: ' . $response->data . '. Sms content: ' . token_replace($message, array('user' => $user));
   watchdog('sms', $log, $variables = array(), $severity = WATCHDOG_NOTICE, $link = NULL);
+
+  //var_dump($response); die();
+
 }
 
 /**
